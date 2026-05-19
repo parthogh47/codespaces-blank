@@ -1,0 +1,138 @@
+{
+  "theme": "light",
+  "archetype": "Archetype 6: Vibrant Play (Adapted with Soft SaaS features)",
+  "design_philosophy": "Modern, friendly, and motivational. The interface relies on clean, card-based layouts with generous rounded corners and subtle shadows. The color palette provides energetic pops of Indigo, Emerald, and Amber over a soft, neutral Light Gray background, creating a playful yet professional space for networking.",
+  "colors": {
+    "primary": "#4F46E5",
+    "primary_hover": "#4338CA",
+    "success": "#10B981",
+    "success_hover": "#059669",
+    "warning_accent": "#FBBF24",
+    "warning_hover": "#F59E0B",
+    "background_base": "#F3F4F6",
+    "background_gradient_end": "#EFF6FF",
+    "surface": "#FFFFFF",
+    "surface_hover": "#F9FAFB",
+    "text_primary": "#111827",
+    "text_secondary": "#4B5563",
+    "text_tertiary": "#9CA3AF",
+    "border": "#E5E7EB"
+  },
+  "typography": {
+    "font_family_headings": "Inter",
+    "font_family_body": "Inter",
+    "rules": {
+      "h1": "text-4xl sm:text-5xl font-bold tracking-tight text-[#111827]",
+      "h2": "text-2xl sm:text-3xl font-bold tracking-tight text-[#111827]",
+      "h3": "text-xl sm:text-2xl font-semibold tracking-tight text-[#111827]",
+      "h4": "text-lg sm:text-xl font-semibold text-[#111827]",
+      "body": "text-base font-normal leading-relaxed text-[#4B5563]",
+      "small": "text-sm font-medium text-[#4B5563]"
+    }
+  },
+  "spacing_and_layout": {
+    "philosophy": "Generous spacing. Elements should breathe to feel approachable and less overwhelming.",
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "card_padding": "p-6 sm:p-8",
+    "gap_standard": "gap-6 sm:gap-8",
+    "border_radius": {
+      "cards": "rounded-2xl sm:rounded-3xl",
+      "buttons": "rounded-xl sm:rounded-full",
+      "badges": "rounded-full"
+    },
+    "shadows": {
+      "card_default": "shadow-sm border border-gray-100",
+      "card_hover": "shadow-md shadow-[#4F46E5]/5 border border-gray-200",
+      "button_primary": "shadow-sm shadow-[#4F46E5]/20"
+    }
+  },
+  "component_guidelines": {
+    "buttons": {
+      "primary": "bg-[#4F46E5] text-white hover:bg-[#4338CA] rounded-xl sm:rounded-full font-semibold transition-all shadow-sm shadow-[#4F46E5]/20",
+      "secondary": "bg-white text-[#111827] border border-gray-200 hover:bg-gray-50 rounded-xl sm:rounded-full font-semibold transition-all",
+      "accent": "bg-[#FBBF24] text-white hover:bg-[#F59E0B] rounded-xl sm:rounded-full font-semibold transition-all shadow-sm shadow-[#FBBF24]/20"
+    },
+    "cards": {
+      "base": "bg-white rounded-2xl sm:rounded-3xl p-6 shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-gray-200",
+      "interactive": "hover:-translate-y-1 cursor-pointer",
+      "challenge_card": "bg-white rounded-2xl p-6 border-l-4 border-[#FBBF24] shadow-sm",
+      "match_card": "bg-white rounded-2xl p-6 border-l-4 border-[#4F46E5] shadow-sm"
+    },
+    "badges": {
+      "skill": "px-3 py-1 bg-gray-100 text-[#4B5563] rounded-full text-sm font-medium",
+      "achievement": "px-3 py-1 bg-[#10B981]/10 text-[#10B981] rounded-full text-sm font-semibold flex items-center gap-1.5",
+      "notification": "px-3 py-1 bg-[#FBBF24]/10 text-[#D97706] rounded-full text-sm font-semibold"
+    },
+    "inputs": {
+      "base": "w-full rounded-xl border-gray-200 bg-white px-4 py-3 text-sm focus:border-[#4F46E5] focus:ring-2 focus:ring-[#4F46E5]/20 outline-none transition-all"
+    }
+  },
+  "motion_and_interaction": {
+    "hover": "transition-all duration-200 ease-in-out",
+    "card_lift": "hover:-translate-y-1",
+    "staggered_list": "Use Framer Motion to stagger card appearances (e.g., matching skills list)",
+    "page_transition": "Fade in with a slight upward motion"
+  },
+  "specific_screens": {
+    "onboarding": {
+      "background": "bg-gradient-to-br from-[#F3F4F6] to-[#EFF6FF]",
+      "layout": "Centered form within a large soft card, step-by-step progressive disclosure.",
+      "visuals": "Animated card transitions, large avatar upload circle."
+    },
+    "dashboard": {
+      "layout": "Bento-style grid. 1 column on mobile, 3 columns on desktop (Main feed 2 cols, Sidebar 1 col).",
+      "sidebar": "Mini-challenges and Leaderboard.",
+      "main": "'Your Skill Matches' feed."
+    },
+    "match_details": {
+      "header": "Large profile presentation, complementary skills side-by-side comparison.",
+      "actions": "Sticky bottom bar on mobile with 'Start Collaboration' (#4F46E5).",
+      "conversation_starters": "Clickable chat bubbles that copy to clipboard, with a subtle success toast."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "stroke-width: 2 or 2.5 for a bolder, friendlier look."
+  },
+  "media": {
+    "images": {
+      "avatars": [
+        {
+          "url": "https://images.unsplash.com/photo-1580489944761-15a19d654956?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwxfHxwZXJzb24lMjBwb3J0cmFpdCUyMHNtaWxpbmd8ZW58MHx8fHwxNzc5MTc2NDE3fDA&ixlib=rb-4.1.0&q=85",
+          "description": "Smiling woman, user profile 1",
+          "category": "user_avatar"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1625241152315-4a698f74ceb7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHw0fHxwZXJzb24lMjBwb3J0cmFpdCUyMHNtaWxpbmd8ZW58MHx8fHwxNzc5MTc2NDE3fDA&ixlib=rb-4.1.0&q=85",
+          "description": "Smiling man, user profile 2",
+          "category": "user_avatar"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwzfHxwZXJzb24lMjBwb3J0cmFpdCUyMHNtaWxpbmd8ZW58MHx8fHwxNzc5MTc2NDE3fDA&ixlib=rb-4.1.0&q=85",
+          "description": "Smiling woman in park, user profile 3",
+          "category": "user_avatar"
+        }
+      ],
+      "illustrations_and_banners": [
+        {
+          "url": "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODF8MHwxfHNlYXJjaHwxfHxjb2xsYWJvcmF0aW9uJTIwdGVhbXdvcmt8ZW58MHx8fHwxNzc5MTc2NDE4fDA&ixlib=rb-4.1.0&q=85",
+          "description": "Group stacking hands, collaboration banner",
+          "category": "collaboration_hero"
+        },
+        {
+          "url": "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzV8MHwxfHNlYXJjaHwxfHxhY2hpZXZlbWVudCUyMHRyb3BoeXxlbnwwfHx8fDE3NzkxNzY0MTd8MA&ixlib=rb-4.1.0&q=85",
+          "description": "Trophy for achievements",
+          "category": "achievement_badge"
+        }
+      ]
+    }
+  },
+  "instructions_to_main_agent": [
+    "Install lucide-react if not already present.",
+    "Use Shadcn UI components but override their default square/sharp corners with 'rounded-2xl' or 'rounded-xl' to match the friendly theme.",
+    "Ensure all text has sufficient contrast against the #F3F4F6 background and #FFFFFF surfaces.",
+    "Apply `tracking-tight` to all headings (Inter bold) to give them a premium, modern feel.",
+    "For the onboarding background, strictly use the gradient: bg-gradient-to-br from-[#F3F4F6] to-[#EFF6FF].",
+    "Add 'data-testid' attributes to all interactive elements for robust testing."
+  ]
+}
