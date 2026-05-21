@@ -509,7 +509,7 @@ async def get_real_user_matches(user: dict = Depends(get_current_user)):
 
 # Messaging Endpoints
 class SendMessageRequest(BaseModel):
-    content: str
+    content: str = Field(..., max_length=5000)
 
 @api_router.post("/conversations/{partner_id}")
 async def create_or_get_conversation(partner_id: str, user: dict = Depends(get_current_user)):
@@ -751,6 +751,10 @@ async def startup():
         # Create indexes
         await db.users.create_index("email", unique=True)
         await db.login_attempts.create_index("identifier")
+        await db.conversations.create_index("participants")
+        await db.conversations.create_index("id", unique=True)
+        await db.messages.create_index([("conversation_id", 1), ("created_at", 1)])
+        await db.shared_matches.create_index("token", unique=True)
         logger.info("Indexes created")
         
         # Initialize storage

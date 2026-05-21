@@ -154,7 +154,6 @@ export const Messages = () => {
                   </Avatar>
                   <div>
                     <p className="text-sm font-semibold text-[#111827]">{activeConv.partner.name}</p>
-                    <p className="text-xs text-[#10B981]">Active</p>
                   </div>
                 </div>
 

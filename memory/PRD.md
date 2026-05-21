@@ -35,7 +35,15 @@ AI-Based Skill Partner Finder app with modern, friendly theme. Users upload prof
 - Brute force protection on login
 - Admin seeding on startup
 - Full design system per design_guidelines.json
-- 15/15 backend tests passing, frontend E2E verified
+
+## Feature Expansion #2 (Feb 2026)
+- **Profile Edit Page** (/profile): Edit name, bio, skills, proficiency, profile picture
+- **Real User Matching** (/api/matches/real): Find actual users in DB with overlapping/complementary skills, shown as green-bordered cards on Dashboard
+- **Messaging System** (/messages, /messages/:id): Full conversations with persistent messages; "Start Collaboration" button on real-user matches creates conversation and navigates to chat
+- **Share Match Feature** (/share/:token): Generate public shareable link for an AI match (viewable without login) - perfect viral hook for user acquisition
+- **Achievement Auto-Award**: Sending first message awards "Collaborator" achievement
+- **Indexes added**: conversations.participants, messages (conversation_id+created_at), shared_matches.token
+- **Tests**: 35/35 backend tests pass; frontend E2E verified end-to-end
 
 ## Tech Decisions
 - Used Emergent LLM Key for OpenAI GPT-4o (no separate billing)
