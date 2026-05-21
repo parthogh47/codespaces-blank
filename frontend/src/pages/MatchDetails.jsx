@@ -15,7 +15,7 @@ export const MatchDetails = () => {
   const isRealUser = location.state?.isRealUser || match?.is_real_user;
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API = '/api';
 
   if (!match) {
     return (

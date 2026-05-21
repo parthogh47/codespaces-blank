@@ -24,7 +24,7 @@ export const ProfileEdit = () => {
   const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
-  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API = '/api';
 
   useEffect(() => {
     if (user) {

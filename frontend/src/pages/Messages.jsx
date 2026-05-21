@@ -19,7 +19,7 @@ export const Messages = () => {
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef(null);
   const navigate = useNavigate();
-  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API = '/api';
 
   useEffect(() => {
     loadConversations();

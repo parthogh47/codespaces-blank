@@ -12,7 +12,7 @@ export const SharedMatch = () => {
   const [share, setShare] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API = '/api';
 
   useEffect(() => {
     loadShare();

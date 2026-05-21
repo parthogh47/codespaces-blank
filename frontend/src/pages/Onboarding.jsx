@@ -21,7 +21,7 @@ export const Onboarding = () => {
   const fileInputRef = useRef(null);
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
-  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API = '/api';
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];

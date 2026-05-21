@@ -19,7 +19,7 @@ export const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
-  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+  const API = '/api';
 
   useEffect(() => {
     loadData();
