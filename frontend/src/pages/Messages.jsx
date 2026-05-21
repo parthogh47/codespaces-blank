@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
@@ -21,9 +21,29 @@ export const Messages = () => {
   const navigate = useNavigate();
   const API = '/api';
 
+  const loadConversations = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API}/conversations`, { withCredentials: true });
+      setConversations(data.conversations || []);
+    } catch (error) {
+      toast.error('Failed to load conversations');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [API]);
+
+  const loadMessages = useCallback(async (convId) => {
+    try {
+      const { data } = await axios.get(`${API}/conversations/${convId}/messages`, { withCredentials: true });
+      setMessages(data.messages || []);
+    } catch (error) {
+      toast.error('Failed to load messages');
+    }
+  }, [API]);
+
   useEffect(() => {
     loadConversations();
-  }, []);
+  }, [loadConversations]);
 
   useEffect(() => {
     if (conversationId && conversations.length > 0) {
@@ -33,31 +53,11 @@ export const Messages = () => {
         loadMessages(conversationId);
       }
     }
-  }, [conversationId, conversations]);
+  }, [conversationId, conversations, loadMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const loadConversations = async () => {
-    try {
-      const { data } = await axios.get(`${API}/conversations`, { withCredentials: true });
-      setConversations(data.conversations || []);
-    } catch (error) {
-      toast.error('Failed to load conversations');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loadMessages = async (convId) => {
-    try {
-      const { data } = await axios.get(`${API}/conversations/${convId}/messages`, { withCredentials: true });
-      setMessages(data.messages || []);
-    } catch (error) {
-      toast.error('Failed to load messages');
-    }
-  };
 
   const openConversation = (conv) => {
     setActiveConv(conv);
@@ -75,7 +75,7 @@ export const Messages = () => {
         { content: newMessage },
         { withCredentials: true }
       );
-      setMessages([...messages, data]);
+      setMessages((prev) => [...prev, data]);
       setNewMessage('');
       loadConversations();
     } catch (error) {
