@@ -26,8 +26,38 @@ export const AuthProvider = ({ children }) => {
 
   const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
+  // Axios interceptor for automatic token refresh on 401
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        if (
+          error.response?.status === 401 &&
+          !originalRequest._retry &&
+          !originalRequest.url.includes('/auth/login') &&
+          !originalRequest.url.includes('/auth/register') &&
+          !originalRequest.url.includes('/auth/refresh') &&
+          !originalRequest.url.includes('/auth/me')
+        ) {
+          originalRequest._retry = true;
+          try {
+            await axios.post(`${API}/auth/refresh`, {}, { withCredentials: true });
+            return axios(originalRequest);
+          } catch {
+            setUser(false);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuth = async () => {

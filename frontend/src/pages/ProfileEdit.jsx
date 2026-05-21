@@ -79,7 +79,8 @@ export const ProfileEdit = () => {
       toast.success('Profile updated!');
       navigate('/dashboard');
     } catch (error) {
-      toast.error('Failed to update profile');
+      const msg = error.response?.data?.detail || error.message || 'Failed to update profile';
+      toast.error(typeof msg === 'string' ? msg : 'Failed to update profile');
     } finally {
       setIsLoading(false);
     }
