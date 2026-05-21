@@ -146,7 +146,7 @@ Only return valid JSON, nothing else."""
         response = await chat.send_message(user_message)
         
         # Clean markdown code fences from response
-        cleaned_response = re.sub(r'^```(?:json)?\\s*|\\s*```$', '', response.strip(), flags=re.MULTILINE).strip()
+        cleaned_response = re.sub(r'^```(?:json)?\s*|\s*```$', '', response.strip(), flags=re.MULTILINE).strip()
         
         # Fallback: extract JSON between first { and last }
         if not cleaned_response.startswith('{'):
@@ -320,7 +320,7 @@ async def refresh(request: Request, response: Response):
         
         user_id = str(user["_id"])
         access_token = create_access_token(user_id, user["email"])
-        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
+        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=900, path="/")
         
         return {"message": "Token refreshed"}
     except jwt.ExpiredSignatureError:

@@ -26,8 +26,22 @@ export const MatchDetails = () => {
   }
 
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
+    navigator.clipboard.writeText(text)
+      .then(() => toast.success('Copied to clipboard!'))
+      .catch(() => {
+        // Fallback for browsers/contexts that block clipboard
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          toast.success('Copied to clipboard!');
+        } catch {
+          toast.error('Failed to copy');
+        }
+        document.body.removeChild(textArea);
+      });
   };
 
   return (
