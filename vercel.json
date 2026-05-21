@@ -1,5 +1,6 @@
 {
   "version": 2,
+<<<<<<< HEAD
   "installCommand": "cd frontend && npm install",
   "buildCommand": "cd frontend && npm run build",
   "outputDirectory": "frontend/build",
@@ -7,6 +8,24 @@
     {
       "source": "/(.*)",
       "destination": "/index.html"
+=======
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+>>>>>>> 569d43d (Create vercel.json)
     }
   ]
 }
