@@ -28,12 +28,17 @@
       "handle": "filesystem"
     },
     {
+<<<<<<< HEAD
       "src": "/(.*)",
       "dest": "/index.html"
 <<<<<<< HEAD
 >>>>>>> 569d43d (Create vercel.json)
 =======
 >>>>>>> 5d5db15 (Update vercel.json)
+=======
+      "src": "/frontend/(.*)",
+      "dest": "/frontend/index.html"
+>>>>>>> 1579cc8 (Update vercel.json)
     }
   ]
 }
