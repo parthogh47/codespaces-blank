@@ -5,12 +5,17 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback } from '../components/ui/avatar';
 import { toast } from 'sonner';
-import { ArrowLeft, Copy, MessageCircle, Users } from 'lucide-react';
+import { ArrowLeft, Copy, MessageCircle, Users, Share2 } from 'lucide-react';
+import axios from 'axios';
 
 export const MatchDetails = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const match = location.state?.match;
+  const isRealUser = location.state?.isRealUser || match?.is_real_user;
+  const [isStartingChat, setIsStartingChat] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
   if (!match) {
     return (
@@ -24,6 +29,56 @@ export const MatchDetails = () => {
       </div>
     );
   }
+
+  const startCollaboration = async () => {
+    if (!isRealUser) {
+      toast.info('This is an AI-suggested partner. Add real users to start collaborating!');
+      return;
+    }
+    setIsStartingChat(true);
+    try {
+      const { data } = await axios.post(
+        `${API}/conversations/${match.id}`,
+        {},
+        { withCredentials: true }
+      );
+      toast.success(`Conversation started with ${match.partner_name}!`);
+      navigate(`/messages/${data.id}`);
+    } catch (error) {
+      toast.error('Failed to start conversation');
+    } finally {
+      setIsStartingChat(false);
+    }
+  };
+
+  const shareMatch = async () => {
+    setIsSharing(true);
+    try {
+      const { data } = await axios.post(`${API}/share/match`, { match }, { withCredentials: true });
+      const shareUrl = `${window.location.origin}/share/${data.token}`;
+      
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `My SkillPartner Match with ${match.partner_name}`,
+            text: `Check out my AI-generated skill match!`,
+            url: shareUrl,
+          });
+          toast.success('Shared!');
+        } catch {
+          navigator.clipboard.writeText(shareUrl);
+          toast.success('Link copied to clipboard!');
+        }
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success('Share link copied to clipboard!');
+      }
+    } catch (error) {
+      toast.error('Failed to create share link');
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text)
@@ -71,7 +126,14 @@ export const MatchDetails = () => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-4xl font-bold tracking-tight text-[#111827] mb-2">{match.partner_name}</h1>
+              <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap mb-2">
+                <h1 className="text-4xl font-bold tracking-tight text-[#111827]">{match.partner_name}</h1>
+                {isRealUser && (
+                  <Badge className="px-3 py-1 bg-[#10B981]/10 text-[#10B981] rounded-full text-sm font-semibold">
+                    Real User
+                  </Badge>
+                )}
+              </div>
               <Badge className={`px-4 py-2 rounded-full text-sm font-semibold ${
                 match.compatibility === 'High' ? 'bg-[#10B981]/10 text-[#10B981]' :
                 match.compatibility === 'Medium' ? 'bg-[#FBBF24]/10 text-[#D97706]' :
@@ -79,6 +141,7 @@ export const MatchDetails = () => {
               }`}>
                 {match.compatibility} Compatibility
               </Badge>
+              {match.bio && <p className="text-sm text-[#4B5563] mt-3">{match.bio}</p>}
             </div>
           </div>
         </Card>
@@ -127,12 +190,24 @@ export const MatchDetails = () => {
         </Card>
 
         {/* CTA */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 rounded-t-3xl sm:relative sm:border-0 sm:bg-transparent sm:p-0">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4 rounded-t-3xl sm:relative sm:border-0 sm:bg-transparent sm:p-0 sm:flex sm:gap-3">
           <Button
+            onClick={startCollaboration}
+            disabled={isStartingChat}
             className="w-full bg-[#4F46E5] text-white hover:bg-[#4338CA] rounded-full font-semibold py-6 text-lg transition-all shadow-sm shadow-[#4F46E5]/20"
             data-testid="start-collaboration-button"
           >
-            Start Collaboration
+            {isStartingChat ? 'Starting...' : isRealUser ? 'Start Collaboration' : 'AI Suggestion'}
+          </Button>
+          <Button
+            onClick={shareMatch}
+            disabled={isSharing}
+            variant="outline"
+            className="w-full sm:w-auto mt-2 sm:mt-0 bg-white text-[#4F46E5] border-[#4F46E5] hover:bg-[#4F46E5]/5 rounded-full font-semibold py-6 px-8 text-lg transition-all"
+            data-testid="share-match-button"
+          >
+            <Share2 className="w-5 h-5 mr-2" />
+            {isSharing ? 'Sharing...' : 'Share'}
           </Button>
         </div>
       </div>

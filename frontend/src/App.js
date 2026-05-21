@@ -7,6 +7,9 @@ import { Register } from "./pages/Register";
 import { Onboarding } from "./pages/Onboarding";
 import { Dashboard } from "./pages/Dashboard";
 import { MatchDetails } from "./pages/MatchDetails";
+import { ProfileEdit } from "./pages/ProfileEdit";
+import { Messages } from "./pages/Messages";
+import { SharedMatch } from "./pages/SharedMatch";
 import { Toaster } from "./components/ui/sonner";
 import "./App.css";
 
@@ -17,6 +20,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/share/:token" element={<SharedMatch />} />
           <Route
             path="/onboarding"
             element={
@@ -30,6 +34,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfileEdit />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <Messages />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages/:conversationId"
+            element={
+              <ProtectedRoute>
+                <Messages />
               </ProtectedRoute>
             }
           />

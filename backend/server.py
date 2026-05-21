@@ -449,6 +449,246 @@ async def get_achievements(user: dict = Depends(get_current_user)):
     
     return {"achievements": achievements_doc.get("achievements", [])}
 
+# Real User Matching Endpoint
+@api_router.get("/matches/real")
+async def get_real_user_matches(user: dict = Depends(get_current_user)):
+    """Find real users with complementary or matching skills."""
+    from bson import ObjectId
+    user_skills = set(user.get("skills", []))
+    
+    if not user_skills:
+        return {"matches": []}
+    
+    # Find users with overlapping or complementary skills (excluding current user and admin)
+    other_users = await db.users.find(
+        {
+            "_id": {"$ne": ObjectId(user["id"])},
+            "role": {"$ne": "admin"},
+            "skills": {"$exists": True, "$ne": []}
+        },
+        {"password_hash": 0}
+    ).to_list(50)
+    
+    matches = []
+    for other in other_users:
+        other_skills = set(other.get("skills", []))
+        if not other_skills:
+            continue
+        
+        overlap = user_skills & other_skills
+        complementary = other_skills - user_skills
+        
+        # Compatibility score
+        if len(overlap) >= 2 or (len(overlap) >= 1 and len(complementary) >= 1):
+            compatibility = "High"
+        elif len(overlap) >= 1 or len(complementary) >= 1:
+            compatibility = "Medium"
+        else:
+            continue
+        
+        matches.append({
+            "id": str(other["_id"]),
+            "partner_name": other.get("name", "Unknown"),
+            "bio": other.get("bio", ""),
+            "profile_picture": other.get("profile_picture"),
+            "complementary_skills": list(complementary)[:5],
+            "shared_skills": list(overlap)[:5],
+            "compatibility": compatibility,
+            "is_real_user": True,
+            "collaboration_idea": f"You both share interest in {', '.join(list(overlap)[:2]) if overlap else 'related skills'}. {other.get('name', 'They')} can help you with {', '.join(list(complementary)[:2]) if complementary else 'their expertise'}.",
+            "conversation_starters": [
+                f"Hi {other.get('name', '').split()[0]}! I noticed we both have skills in {list(overlap)[0] if overlap else 'similar areas'}. Want to collaborate?",
+                f"Hey! I'm looking to learn more about {list(complementary)[0] if complementary else 'your skills'}. Would you be open to chatting?"
+            ]
+        })
+    
+    # Sort by compatibility (High first)
+    matches.sort(key=lambda m: 0 if m["compatibility"] == "High" else 1)
+    
+    return {"matches": matches[:10]}
+
+# Messaging Endpoints
+class SendMessageRequest(BaseModel):
+    content: str
+
+@api_router.post("/conversations/{partner_id}")
+async def create_or_get_conversation(partner_id: str, user: dict = Depends(get_current_user)):
+    """Create or get an existing conversation with another user."""
+    from bson import ObjectId
+    
+    # Verify partner exists
+    try:
+        partner = await db.users.find_one({"_id": ObjectId(partner_id)}, {"password_hash": 0})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid partner ID")
+    
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    
+    if partner_id == user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot message yourself")
+    
+    # Sorted participant IDs for consistent lookup
+    participants = sorted([user["id"], partner_id])
+    
+    existing = await db.conversations.find_one({"participants": participants})
+    if existing:
+        return {
+            "id": existing["id"],
+            "participants": existing["participants"],
+            "partner": {
+                "id": partner_id,
+                "name": partner.get("name", ""),
+                "profile_picture": partner.get("profile_picture")
+            },
+            "created_at": existing.get("created_at")
+        }
+    
+    conv_id = str(uuid.uuid4())
+    conv_doc = {
+        "id": conv_id,
+        "participants": participants,
+        "last_message": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.conversations.insert_one(dict(conv_doc))
+    
+    return {
+        "id": conv_id,
+        "participants": participants,
+        "partner": {
+            "id": partner_id,
+            "name": partner.get("name", ""),
+            "profile_picture": partner.get("profile_picture")
+        },
+        "created_at": conv_doc["created_at"]
+    }
+
+@api_router.get("/conversations")
+async def list_conversations(user: dict = Depends(get_current_user)):
+    """List all conversations for the current user."""
+    from bson import ObjectId
+    
+    convs = await db.conversations.find(
+        {"participants": user["id"]},
+        {"_id": 0}
+    ).sort("updated_at", -1).to_list(100)
+    
+    # Enrich with partner info
+    enriched = []
+    for c in convs:
+        partner_id = next((p for p in c["participants"] if p != user["id"]), None)
+        if not partner_id:
+            continue
+        try:
+            partner = await db.users.find_one({"_id": ObjectId(partner_id)}, {"password_hash": 0})
+        except Exception:
+            partner = None
+        
+        enriched.append({
+            "id": c["id"],
+            "partner": {
+                "id": partner_id,
+                "name": partner.get("name", "Unknown") if partner else "Unknown",
+                "profile_picture": partner.get("profile_picture") if partner else None
+            },
+            "last_message": c.get("last_message"),
+            "updated_at": c.get("updated_at")
+        })
+    
+    return {"conversations": enriched}
+
+@api_router.get("/conversations/{conv_id}/messages")
+async def get_messages(conv_id: str, user: dict = Depends(get_current_user)):
+    """Get all messages in a conversation."""
+    conv = await db.conversations.find_one({"id": conv_id})
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    if user["id"] not in conv["participants"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    messages = await db.messages.find(
+        {"conversation_id": conv_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(500)
+    
+    return {"messages": messages}
+
+@api_router.post("/conversations/{conv_id}/messages")
+async def send_message(conv_id: str, input: SendMessageRequest, user: dict = Depends(get_current_user)):
+    """Send a message in a conversation."""
+    conv = await db.conversations.find_one({"id": conv_id})
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    if user["id"] not in conv["participants"]:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    if not input.content.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+    
+    msg_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    msg_doc = {
+        "id": msg_id,
+        "conversation_id": conv_id,
+        "sender_id": user["id"],
+        "sender_name": user.get("name", ""),
+        "content": input.content.strip(),
+        "created_at": now
+    }
+    await db.messages.insert_one(dict(msg_doc))
+    
+    # Update conversation last_message
+    await db.conversations.update_one(
+        {"id": conv_id},
+        {"$set": {"last_message": {"content": input.content.strip()[:100], "sender_id": user["id"], "created_at": now}, "updated_at": now}}
+    )
+    
+    # Award "Collaborator" achievement on first message
+    achievements_doc = await db.achievements.find_one({"user_id": user["id"]})
+    if achievements_doc:
+        for a in achievements_doc.get("achievements", []):
+            if a.get("title") == "Collaborator" and not a.get("earned"):
+                a["earned"] = True
+        await db.achievements.update_one(
+            {"user_id": user["id"]},
+            {"$set": {"achievements": achievements_doc["achievements"]}}
+        )
+    
+    return msg_doc
+
+# Share Match Endpoints
+class ShareMatchRequest(BaseModel):
+    match: Dict[str, Any]
+
+@api_router.post("/share/match")
+async def share_match(input: ShareMatchRequest, user: dict = Depends(get_current_user)):
+    """Generate a shareable token for a match."""
+    token = uuid.uuid4().hex[:16]
+    
+    share_doc = {
+        "token": token,
+        "user_id": user["id"],
+        "user_name": user.get("name", ""),
+        "user_skills": user.get("skills", []),
+        "match": input.match,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.shared_matches.insert_one(dict(share_doc))
+    
+    return {"token": token, "share_url": f"/share/{token}"}
+
+@api_router.get("/share/{token}")
+async def get_shared_match(token: str):
+    """Public endpoint to view a shared match (no auth)."""
+    share = await db.shared_matches.find_one({"token": token}, {"_id": 0})
+    if not share:
+        raise HTTPException(status_code=404, detail="Shared match not found")
+    return share
+
 # Admin Seeding
 async def seed_admin():
     admin_email = os.environ.get("ADMIN_EMAIL", "admin@skillpartner.com")

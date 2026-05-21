@@ -6,12 +6,13 @@ import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { toast } from 'sonner';
-import { Users, Trophy, Target, Sparkles, LogOut, RefreshCw } from 'lucide-react';
+import { Users, Trophy, Target, Sparkles, LogOut, RefreshCw, User, MessageCircle, UserCheck } from 'lucide-react';
 import axios from 'axios';
 
 export const Dashboard = () => {
   const { user, logout } = useAuth();
   const [matches, setMatches] = useState([]);
+  const [realMatches, setRealMatches] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [matchError, setMatchError] = useState(null);
@@ -22,16 +23,19 @@ export const Dashboard = () => {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
     try {
-      const [matchesRes, achievementsRes] = await Promise.all([
+      const [matchesRes, realRes, achievementsRes] = await Promise.all([
         axios.get(`${API}/matches`, { withCredentials: true }),
+        axios.get(`${API}/matches/real`, { withCredentials: true }),
         axios.get(`${API}/achievements`, { withCredentials: true })
       ]);
       
       setMatches(matchesRes.data.matches || []);
+      setRealMatches(realRes.data.matches || []);
       setChallenges(matchesRes.data.mini_challenges || []);
       setAchievements(achievementsRes.data.achievements || []);
       
@@ -98,8 +102,26 @@ export const Dashboard = () => {
               </div>
               <h1 className="text-2xl font-bold tracking-tight text-[#111827]">SkillPartner</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-right hidden sm:block">
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => navigate('/messages')}
+                variant="ghost"
+                className="rounded-full"
+                data-testid="messages-nav-button"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="ml-2 hidden sm:inline">Messages</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/profile')}
+                variant="ghost"
+                className="rounded-full"
+                data-testid="profile-nav-button"
+              >
+                <User className="w-5 h-5" />
+                <span className="ml-2 hidden sm:inline">Profile</span>
+              </Button>
+              <div className="text-right hidden lg:block ml-2">
                 <p className="text-sm font-semibold text-[#111827]">{user?.name}</p>
                 <p className="text-xs text-[#4B5563]">{user?.email}</p>
               </div>
@@ -138,7 +160,66 @@ export const Dashboard = () => {
               </div>
             </Card>
 
-            {/* Matches Section */}
+            {/* Real Users Section */}
+            {realMatches.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827] flex items-center gap-2">
+                    <UserCheck className="w-7 h-7 text-[#10B981]" />
+                    Real People to Connect With
+                  </h3>
+                </div>
+                <div className="space-y-4">
+                  {realMatches.map((match) => (
+                    <Card
+                      key={match.id}
+                      className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 hover:shadow-md hover:border-gray-200 hover:-translate-y-1 transition-all cursor-pointer border-l-4 border-l-[#10B981]"
+                      onClick={() => navigate(`/match/real-${match.id}`, { state: { match, isRealUser: true } })}
+                      data-testid={`real-match-card-${match.id}`}
+                    >
+                      <div className="flex items-start gap-4">
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback className="bg-[#10B981] text-white font-semibold">
+                            {match.partner_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-lg font-semibold text-[#111827]">{match.partner_name}</h4>
+                              <Badge className="px-2 py-0.5 bg-[#10B981]/10 text-[#10B981] rounded-full text-xs font-semibold">
+                                Real User
+                              </Badge>
+                            </div>
+                            <Badge className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                              match.compatibility === 'High' ? 'bg-[#10B981]/10 text-[#10B981]' :
+                              'bg-[#FBBF24]/10 text-[#D97706]'
+                            }`}>
+                              {match.compatibility} Match
+                            </Badge>
+                          </div>
+                          {match.bio && <p className="text-sm text-[#4B5563] mb-3">{match.bio}</p>}
+                          <div className="flex flex-wrap gap-2">
+                            {match.complementary_skills?.slice(0, 4).map((skill, i) => (
+                              <Badge key={i} className="px-3 py-1 bg-[#4F46E5]/10 text-[#4F46E5] rounded-full text-sm font-medium">
+                                {skill}
+                              </Badge>
+                            ))}
+                            {match.shared_skills?.slice(0, 3).map((skill, i) => (
+                              <Badge key={`s-${i}`} className="px-3 py-1 bg-gray-100 text-[#4B5563] rounded-full text-sm font-medium">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* AI Matches Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#111827] flex items-center gap-2">
