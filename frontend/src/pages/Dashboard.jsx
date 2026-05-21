@@ -14,6 +14,7 @@ export const Dashboard = () => {
   const [matches, setMatches] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [matchError, setMatchError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const navigate = useNavigate();
@@ -33,8 +34,15 @@ export const Dashboard = () => {
       setMatches(matchesRes.data.matches || []);
       setChallenges(matchesRes.data.mini_challenges || []);
       setAchievements(achievementsRes.data.achievements || []);
+      
+      if (matchesRes.data.error) {
+        setMatchError(matchesRes.data.error_message || 'Failed to generate matches');
+      } else {
+        setMatchError(null);
+      }
     } catch (error) {
       toast.error('Failed to load data');
+      setMatchError('Failed to load matches');
     } finally {
       setIsLoading(false);
     }
@@ -46,9 +54,17 @@ export const Dashboard = () => {
       const { data } = await axios.post(`${API}/matches/generate`, { force_refresh: true }, { withCredentials: true });
       setMatches(data.matches || []);
       setChallenges(data.mini_challenges || []);
-      toast.success('New matches generated!');
+      
+      if (data.error) {
+        setMatchError(data.error_message || 'Failed to generate matches');
+        toast.error(data.error_message || 'Failed to generate matches');
+      } else {
+        setMatchError(null);
+        toast.success('New matches generated!');
+      }
     } catch (error) {
       toast.error('Failed to generate matches');
+      setMatchError('Failed to generate matches');
     } finally {
       setIsGenerating(false);
     }
@@ -141,7 +157,18 @@ export const Dashboard = () => {
               </div>
               
               <div className="space-y-6">
-                {matches.length === 0 ? (
+                {matchError ? (
+                  <Card className="bg-white rounded-3xl shadow-sm border border-red-200 p-8 text-center">
+                    <p className="text-red-600 font-medium mb-4">{matchError}</p>
+                    <Button
+                      onClick={generateNewMatches}
+                      disabled={isGenerating}
+                      className="bg-[#4F46E5] text-white hover:bg-[#4338CA] rounded-full"
+                    >
+                      {isGenerating ? 'Generating...' : 'Try Again'}
+                    </Button>
+                  </Card>
+                ) : matches.length === 0 ? (
                   <Card className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 text-center">
                     <p className="text-[#4B5563]">No matches yet. Click refresh to generate!</p>
                   </Card>

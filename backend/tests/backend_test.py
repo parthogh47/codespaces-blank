@@ -107,20 +107,69 @@ def test_upload_picture(session):
 
 # Matches (AI integration)
 def test_matches_get(session):
-    r = session.get(f"{API}/matches", timeout=60)
+    r = session.get(f"{API}/matches", timeout=90)
     assert r.status_code == 200, r.text
     data = r.json()
     assert "matches" in data
     assert "mini_challenges" in data
     assert "social_hooks" in data
     assert isinstance(data["matches"], list)
+    # CRITICAL: AI matchmaking must return non-empty matches with required fields
+    assert len(data["matches"]) > 0, f"Expected non-empty matches, got error: {data.get('error_message')}"
+    m = data["matches"][0]
+    for field in ("partner_name", "complementary_skills", "compatibility", "collaboration_idea", "conversation_starters"):
+        assert field in m, f"Missing field {field} in match: {m}"
+    assert isinstance(m["conversation_starters"], list)
+    assert len(m["conversation_starters"]) > 0
 
 
 def test_matches_generate(session):
-    r = session.post(f"{API}/matches/generate", json={"force_refresh": True}, timeout=60)
+    r = session.post(f"{API}/matches/generate", json={"force_refresh": True}, timeout=90)
     assert r.status_code == 200, r.text
     data = r.json()
     assert "matches" in data
+    assert len(data["matches"]) > 0, f"Generate returned empty matches: {data.get('error_message')}"
+
+
+# File auth check: another user cannot access uploaded file
+def test_file_auth_check(session):
+    # Get the uploaded file path from profile
+    r = session.get(f"{API}/profile")
+    assert r.status_code == 200
+    profile_pic = r.json().get("profile_picture")
+    if not profile_pic:
+        pytest.skip("No profile picture uploaded - skipping file auth test")
+
+    # Owner can access
+    r_own = session.get(f"{API}/files/{profile_pic}")
+    assert r_own.status_code == 200, f"Owner should access own file, got {r_own.status_code}"
+
+    # Unauthenticated user cannot access
+    r_unauth = requests.get(f"{API}/files/{profile_pic}")
+    assert r_unauth.status_code == 401, f"Unauth should get 401, got {r_unauth.status_code}"
+
+    # Another logged-in user cannot access
+    other_email = f"other_{uuid.uuid4().hex[:8]}@example.com"
+    other_session = requests.Session()
+    r_reg = other_session.post(f"{API}/auth/register", json={"email": other_email, "password": "Pass123!", "name": "Other"})
+    assert r_reg.status_code == 200
+    r_other = other_session.get(f"{API}/files/{profile_pic}")
+    assert r_other.status_code == 403, f"Other user should get 403, got {r_other.status_code}"
+
+
+# Cookie security
+def test_cookie_security():
+    s = requests.Session()
+    r = s.post(f"{API}/auth/login", json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
+    assert r.status_code == 200
+    # Inspect raw Set-Cookie headers
+    set_cookies = r.headers.get("set-cookie", "")
+    # requests merges multiple Set-Cookie via raw attribute
+    raw_headers = r.raw.headers.getlist("Set-Cookie") if hasattr(r.raw, "headers") else [set_cookies]
+    access_cookie = next((c for c in raw_headers if c.startswith("access_token=")), "")
+    assert "Secure" in access_cookie, f"access_token cookie missing Secure flag: {access_cookie}"
+    assert "SameSite=none" in access_cookie.lower().replace("samesite=none", "SameSite=none") or "samesite=none" in access_cookie.lower(), f"access_token missing SameSite=none: {access_cookie}"
+    assert "HttpOnly" in access_cookie, f"access_token missing HttpOnly: {access_cookie}"
 
 
 # Achievements

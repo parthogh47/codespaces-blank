@@ -17,6 +17,7 @@ import bcrypt
 import jwt
 import requests
 import json
+import re
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 # MongoDB connection
@@ -138,20 +139,39 @@ Only return valid JSON, nothing else."""
         chat = LlmChat(
             api_key=os.environ.get("EMERGENT_LLM_KEY"),
             session_id=f"match_{user_profile.get('id', 'default')}",
-            system_message="You are a helpful AI assistant that generates skill matching data in JSON format."
+            system_message="You are a helpful AI assistant that generates skill matching data. Respond with raw JSON only, no markdown code fences or additional text."
         ).with_model("openai", "gpt-4o")
         
         user_message = UserMessage(text=prompt)
         response = await chat.send_message(user_message)
         
-        result = json.loads(response)
+        # Clean markdown code fences from response
+        cleaned_response = re.sub(r'^```(?:json)?\\s*|\\s*```$', '', response.strip(), flags=re.MULTILINE).strip()
+        
+        # Fallback: extract JSON between first { and last }
+        if not cleaned_response.startswith('{'):
+            start = cleaned_response.find('{')
+            end = cleaned_response.rfind('}')
+            if start != -1 and end != -1:
+                cleaned_response = cleaned_response[start:end+1]
+        
+        result = json.loads(cleaned_response)
+        
+        # Validate result has required fields
+        if not result.get("matches") or len(result["matches"]) == 0:
+            logger.warning("AI returned empty matches, using fallback")
+            raise ValueError("Empty matches from AI")
+        
         return result
     except Exception as e:
         logger.error(f"AI matchmaking error: {e}")
+        # Return fallback with error flag
         return {
             "matches": [],
-            "mini_challenges": ["Complete your profile", "Add more skills"],
-            "social_hooks": ["Share your progress", "Invite a friend to join"]
+            "mini_challenges": [f"Add more skills to get better matches", "Try refreshing your profile"],
+            "social_hooks": ["Share your profile", "Invite a friend"],
+            "error": True,
+            "error_message": "Failed to generate AI matches. Please try again."
         }
 
 # Models
@@ -203,8 +223,8 @@ async def register(input: RegisterRequest, response: Response):
     access_token = create_access_token(user_id, email)
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=900, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     
     return {
         "id": user_id,
@@ -258,8 +278,8 @@ async def login(input: LoginRequest, response: Response, request: Request):
     access_token = create_access_token(user_id, email)
     refresh_token = create_refresh_token(user_id)
     
-    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=False, samesite="lax", max_age=900, path="/")
-    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=False, samesite="lax", max_age=604800, path="/")
+    response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True, samesite="none", max_age=900, path="/")
+    response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True, samesite="none", max_age=604800, path="/")
     
     return {
         "id": user_id,
@@ -357,14 +377,14 @@ async def upload_picture(file: UploadFile = File(...), user: dict = Depends(get_
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.get("/files/{path:path}")
-async def download_file(path: str, authorization: str = Header(None), auth: str = Query(None)):
-    auth_header = authorization or (f"Bearer {auth}" if auth else None)
-    
-    # Optional: Add auth check here if needed
-    
+async def download_file(path: str, user: dict = Depends(get_current_user)):
     record = await db.files.find_one({"storage_path": path, "is_deleted": False})
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
+    
+    # Auth check: users can only access their own files
+    if record.get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     try:
         data, content_type = get_object(path)
